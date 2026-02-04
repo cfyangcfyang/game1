@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>明星眼睛辨識遊戲</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>明星眼睛辨識遊戲 (手機版)</title>
     <style>
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
@@ -13,26 +13,27 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: hidden;
+            overflow: hidden; /* 防止捲動 */
+            touch-action: manipulation; /* 優化觸控反應 */
         }
 
-        /* 分數欄樣式 */
+        /* 分數欄 */
         #score-board {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 10px;
+            right: 10px;
             background-color: #333;
             color: #fff;
-            padding: 20px;
+            padding: 10px 20px;
             border-radius: 10px;
-            font-size: 24px;
+            font-size: 18px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             text-align: center;
-            min-width: 150px;
+            z-index: 100;
         }
 
         #score-val {
-            font-size: 40px;
+            font-size: 32px;
             font-weight: bold;
             color: #ffd700;
         }
@@ -41,123 +42,169 @@
         #game-container {
             text-align: center;
             background: white;
-            padding: 40px;
+            padding: 20px;
             border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 80%;
-            max-width: 800px;
-            min-height: 500px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+            height: 90vh; /* 佔據手機大部分高度 */
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative;
         }
 
         /* 圖片樣式 */
         #question-image {
             max-width: 100%;
-            max-height: 400px;
-            border: 5px solid #333;
+            max-height: 40vh; /* 限制高度，留空間給按鈕 */
+            object-fit: contain;
+            border: 3px solid #333;
             border-radius: 10px;
-            display: none; /* 初始隱藏 */
-            margin-bottom: 20px;
+            display: none;
+            margin-bottom: 10px;
         }
 
         /* 答案文字 */
         #answer-text {
-            font-size: 48px;
+            font-size: 36px;
             font-weight: bold;
             color: #d32f2f;
-            margin-top: 20px;
-            min-height: 60px;
-            opacity: 0; /* 初始透明 */
+            margin: 10px 0;
+            min-height: 50px;
+            opacity: 0;
             transition: opacity 0.3s ease;
+        }
+
+        /* 狀態提示 */
+        #status-msg {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 15px;
+            min-height: 24px;
+        }
+
+        /* 手機版控制按鈕區 */
+        #controls {
+            display: none; /* 遊戲開始前隱藏 */
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-control {
+            flex: 1;
+            min-width: 90px;
+            padding: 15px 5px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .btn-control:active {
+            transform: scale(0.95);
+        }
+
+        .btn-correct { background-color: #4CAF50; } /* 綠色 */
+        .btn-wrong { background-color: #f44336; }   /* 紅色 */
+        .btn-half { background-color: #ff9800; }    /* 橘色 */
+
+        /* 按鈕禁用狀態 (防止連點) */
+        .btn-disabled {
+            opacity: 0.5;
+            pointer-events: none;
         }
 
         /* 開始按鈕 */
         #start-btn {
-            font-size: 32px;
-            padding: 20px 60px;
+            font-size: 24px;
+            padding: 15px 40px;
             background-color: #2196F3;
             color: white;
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
             box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
         }
 
-        #start-btn:hover {
-            background-color: #1976D2;
-            transform: scale(1.05);
-        }
-
-        #start-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* 狀態提示 */
-        #status-msg {
-            margin-top: 10px;
-            color: #666;
-            font-size: 18px;
-        }
-
-        /* 按鍵回饋動畫 */
-        .points-added {
-            position: fixed;
-            right: 200px;
-            top: 50px;
-            font-size: 30px;
-            font-weight: bold;
-            color: #4CAF50;
-            opacity: 0;
-            transition: opacity 0.5s, top 0.5s;
-        }
-        
         /* 結束畫面 */
         #end-screen {
             display: none;
+        }
+
+        /* 飄字動畫 */
+        .points-added {
+            position: fixed;
+            left: 50%;
+            top: 40%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            font-weight: bold;
+            color: #4CAF50;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 200;
+            text-shadow: 2px 2px 4px white;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; top: 40%; }
+            100% { opacity: 0; top: 20%; }
         }
     </style>
 </head>
 <body>
 
-    <!-- 右側分數欄 -->
     <div id="score-board">
         <div>總分</div>
         <div id="score-val">0</div>
     </div>
 
-    <!-- 加分動畫提示容器 -->
     <div id="points-anim" class="points-added"></div>
 
-    <!-- 遊戲主畫面 -->
     <div id="game-container">
         
         <!-- 開始畫面 -->
         <div id="start-screen">
-            <h1>明星人眼辨識大挑戰</h1>
-            <p>請準備好按鍵：<br>1: 答對 (+150) | 2: 答錯 (+0) | 3: 半對 (+75)</p>
+            <h1>明星眼睛辨識</h1>
+            <p>手機與電腦皆可遊玩</p>
             <button id="start-btn" onclick="startGame()">開始遊戲</button>
         </div>
 
-        <!-- 遊戲進行畫面 -->
+        <!-- 遊戲主體 -->
         <img id="question-image" src="" alt="明星眼睛">
         <div id="answer-text">答案</div>
-        <div id="status-msg" style="display:none;">請按 1, 2 或 3 計分...</div>
+        <div id="status-msg" style="display:none;">請點擊下方按鈕評分</div>
+
+        <!-- 手機控制按鈕 -->
+        <div id="controls">
+            <button class="btn-control btn-correct" onclick="handleInput(1)">
+                答對<br>(+150)
+            </button>
+            <button class="btn-control btn-wrong" onclick="handleInput(2)">
+                答錯<br>(+0)
+            </button>
+            <button class="btn-control btn-half" onclick="handleInput(3)">
+                半對<br>(+75)
+            </button>
+        </div>
 
         <!-- 結束畫面 -->
         <div id="end-screen">
             <h1>遊戲結束!</h1>
             <h2>最終得分</h2>
-            <h1 style="font-size: 80px; color: #ffd700;" id="final-score">0</h1>
+            <h1 style="font-size: 60px; color: #ffd700;" id="final-score">0</h1>
             <button id="start-btn" onclick="location.reload()">重新開始</button>
         </div>
     </div>
 
     <script>
-        // 題目資料設定
         const database = [
             { file: '1.png', name: 'Karina' },
             { file: '2.png', name: '宋江' },
@@ -167,122 +214,113 @@
             { file: '6.png', name: '車銀優' }
         ];
 
-        let questions = []; // 用來存放隨機排序後的題目
+        let questions = [];
         let currentScore = 0;
-        let isInputLocked = true; // 鎖定輸入，防止重複按鍵或在非答題時間按鍵
-        let currentQuestionIndex = 0;
+        let isInputLocked = true;
+        let controlBtns = document.querySelectorAll('.btn-control');
 
-        // DOM 元素
         const scoreValEl = document.getElementById('score-val');
         const startScreenEl = document.getElementById('start-screen');
         const endScreenEl = document.getElementById('end-screen');
         const imgEl = document.getElementById('question-image');
         const answerTextEl = document.getElementById('answer-text');
         const statusMsgEl = document.getElementById('status-msg');
+        const controlsEl = document.getElementById('controls');
         const pointsAnimEl = document.getElementById('points-anim');
 
-        // 開始遊戲
         function startGame() {
-            // 初始化
             currentScore = 0;
             scoreValEl.textContent = "0";
             
-            // 複製並隨機打亂題目 (Fisher-Yates Shuffle)
+            // 洗牌
             questions = [...database];
             for (let i = questions.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [questions[i], questions[j]] = [questions[j], questions[i]];
             }
 
-            // 介面切換
             startScreenEl.style.display = 'none';
             imgEl.style.display = 'block';
             statusMsgEl.style.display = 'block';
+            controlsEl.style.display = 'flex'; // 顯示按鈕區
             
-            // 出第一題
             nextQuestion();
         }
 
-        // 顯示下一題
         function nextQuestion() {
             if (questions.length === 0) {
                 endGame();
                 return;
             }
 
-            // 取出陣列中最後一個題目 (避免重複)
             const currentQ = questions.pop();
             
-            // 更新畫面
             imgEl.src = currentQ.file;
-            imgEl.dataset.answer = currentQ.name; // 暫存答案
-            answerTextEl.style.opacity = '0'; // 隱藏答案
+            imgEl.dataset.answer = currentQ.name;
+            answerTextEl.style.opacity = '0';
             answerTextEl.textContent = "???"; 
             
-            // 解鎖輸入
+            // 解鎖
             isInputLocked = false;
-            statusMsgEl.textContent = "請按數字鍵 1, 2, 3 進行評分";
+            statusMsgEl.textContent = "請點擊按鈕評分";
+            toggleButtons(true); // 啟用按鈕
         }
 
-        // 處理結束
         function endGame() {
             imgEl.style.display = 'none';
             answerTextEl.style.display = 'none';
             statusMsgEl.style.display = 'none';
+            controlsEl.style.display = 'none'; // 隱藏按鈕區
             endScreenEl.style.display = 'block';
             document.getElementById('final-score').textContent = currentScore;
         }
 
-        // 顯示加分動畫
-        function showPointsAnimation(points) {
-            pointsAnimEl.textContent = points > 0 ? `+${points}` : `+0`;
-            pointsAnimEl.style.opacity = '1';
-            pointsAnimEl.style.top = '50px';
-            
-            // 重置動畫
-            setTimeout(() => {
-                pointsAnimEl.style.opacity = '0';
-                pointsAnimEl.style.top = '20px';
-            }, 1000);
-        }
-
-        // 監聽鍵盤事件
-        document.addEventListener('keydown', function(event) {
+        // 統一處理輸入 (不管是按鍵盤還是點按鈕都呼叫這裡)
+        function handleInput(type) {
             if (isInputLocked) return;
 
             let pointsToAdd = 0;
-            let isValidKey = false;
+            if (type === 1) pointsToAdd = 150;
+            else if (type === 2) pointsToAdd = 0;
+            else if (type === 3) pointsToAdd = 75;
 
-            if (event.key === '1') {
-                pointsToAdd = 150;
-                isValidKey = true;
-            } else if (event.key === '2') {
-                pointsToAdd = 0;
-                isValidKey = true;
-            } else if (event.key === '3') {
-                pointsToAdd = 75;
-                isValidKey = true;
-            }
+            // 鎖定輸入並處理
+            isInputLocked = true;
+            toggleButtons(false); // 禁用按鈕視覺效果
 
-            if (isValidKey) {
-                // 1. 鎖定輸入
-                isInputLocked = true;
+            currentScore += pointsToAdd;
+            scoreValEl.textContent = currentScore;
+            
+            // 動畫
+            pointsAnimEl.textContent = pointsToAdd > 0 ? `+${pointsToAdd}` : `+0`;
+            pointsAnimEl.style.animation = 'none';
+            pointsAnimEl.offsetHeight; /* trigger reflow */
+            pointsAnimEl.style.animation = 'floatUp 1s ease-out forwards';
 
-                // 2. 更新分數
-                currentScore += pointsToAdd;
-                scoreValEl.textContent = currentScore;
-                showPointsAnimation(pointsToAdd);
+            // 顯示答案
+            answerTextEl.textContent = imgEl.dataset.answer;
+            answerTextEl.style.opacity = '1';
+            statusMsgEl.textContent = "下一題準備中...";
 
-                // 3. 顯示答案
-                answerTextEl.textContent = imgEl.dataset.answer;
-                answerTextEl.style.opacity = '1';
-                statusMsgEl.textContent = "下一題...";
+            // 1.8秒後下一題
+            setTimeout(() => {
+                nextQuestion();
+            }, 1800);
+        }
 
-                // 4. 設定 3 秒後進入下一題
-                setTimeout(() => {
-                    nextQuestion();
-                }, 1800);
-            }
+        // 切換按鈕樣式 (避免連點)
+        function toggleButtons(enable) {
+            controlBtns.forEach(btn => {
+                if(enable) btn.classList.remove('btn-disabled');
+                else btn.classList.add('btn-disabled');
+            });
+        }
+
+        // 鍵盤監聽 (保留給電腦版用)
+        document.addEventListener('keydown', function(event) {
+            if (event.key === '1') handleInput(1);
+            else if (event.key === '2') handleInput(2);
+            else if (event.key === '3') handleInput(3);
         });
     </script>
 </body>
